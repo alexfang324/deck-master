@@ -1,0 +1,172 @@
+﻿@using Microsoft.AspNetCore.Identity
+@inject SignInManager<IdentityUser> SignInManager
+
+@model List<Product>
+
+
+<main role="main" class="pb-3">
+    @foreach (var product in Model.Select((value, ind) => (value, ind)))
+    {
+        <div class="row">
+            <div class="col-sm-4">
+                <div class="row">
+                    @* <div class="col-lg-6"></div> *@
+                    <div class="col-lg-6">
+                        <img src="@product.value.src" alt="Pack of cards" style="max-width: 100%;">
+                        <div class="" style="color:#CC0000; font-size: 1.5em;text-align: center;">
+                            $<span id="itemPrice-@product.ind">@product.value.price</span>
+                            <span id="currency@product.Id">CAD</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-8 col-md-4" style="padding-top:20px;">@product.value.description</div>
+            <div class="col-sm-4 d-md-block">
+                @if (SignInManager.IsSignedIn(User))
+                {
+                    <div class="col-horiz-center">
+                        <button id="addBtn-@product.ind" class="btn primary-btn-theme ">Add to Cart</button>
+                        <button id="removeBtn-@product.ind" class="btn grey-btn-theme">Remove from cart</button>
+                        <table class="add-to-cart-table">
+                            <tr><th>Qty</th><th>Amount</th></tr>
+                            <tr><td id="qty-@product.ind">0</td><td>$<span id="subtotal-@product.ind">0</span> CAD</td></tr>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+        <hr />
+    }
+
+    @if (SignInManager.IsSignedIn(User))
+    {
+        <div class="row">
+            <div class="col-sm-4">
+                <div class="row">
+                    <div class="col-lg-6"></div>
+                    <div class="col-lg-6">
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-8 col-md-4" style="padding-top:20px;"></div>
+            <div class="col-sm-4 d-md-block">
+
+                    <div class="col-horiz-center">
+                        <div id="paypal-button-container"></div>
+                    <table class="add-to-cart-table">
+                        <tr><th>Qty</th><th>Amount</th></tr>
+                        <tr>
+                            <td id="qty-total" style="border:none;">0</td>
+                            <td style="border:none;">$<span id="total-price">0</span> <span id="currency">CAD</span></td>
+                        </tr>
+                    </table>
+                </div>
+                
+            </div>
+        </div>
+    }
+    else
+    {
+        <a class="btn btn-primary" asp-area="Identity" asp-page="/Account/Login" style="background-color: #6E0B14;color:white;margin-left:240px;">Login to Purchase</a>
+
+    }
+
+</main>
+
+<script>
+    let totalQtyElement = document.getElementById('qty-total');
+    let totalPriceElement = document.getElementById('total-price');
+
+    //set up add quantity button event listener
+    const addBtns = document.querySelectorAll('[id^="addBtn"]');
+    addBtns.forEach((btn) => {
+        const listNum = btn.id.split('-')[1];
+        let qtyElement = document.getElementById(`qty-${listNum}`);
+        let unitPriceElement = document.getElementById(`itemPrice-${listNum}`);
+        let subtotal = document.getElementById(`subtotal-${listNum}`);
+        btn.addEventListener('click', () => {
+            const unitPrice = parseFloat(unitPriceElement.innerHTML);
+            qtyElement.innerHTML = parseInt(qtyElement.innerHTML) + 1;
+            subtotal.innerHTML = (parseFloat(subtotal.innerHTML) + unitPrice).toFixed(2)
+            totalQtyElement.innerHTML = parseInt(totalQtyElement.innerHTML) + 1;
+            totalPriceElement.innerHTML = parseFloat(totalPriceElement.innerHTML) + unitPrice;
+        })
+    })
+    //set up remove quantity button event listener
+    const removeBtns = document.querySelectorAll('[id^="removeBtn"]');
+    removeBtns.forEach((btn) => {
+        const listNum = btn.id.split('-')[1];
+        let qtyElement = document.getElementById(`qty-${listNum}`);
+        let unitPriceElement = document.getElementById(`itemPrice-${listNum}`);
+        let subtotal = document.getElementById(`subtotal-${listNum}`);
+        btn.addEventListener('click', () => {
+            if (parseInt(qtyElement.innerHTML) > 0) {
+                const unitPrice = parseFloat(unitPriceElement.innerHTML);
+                qtyElement.innerHTML = parseInt(qtyElement.innerHTML) - 1;
+                subtotal.innerHTML = (parseFloat(subtotal.innerHTML) - unitPrice).toFixed(2)
+                totalQtyElement.innerHTML = parseInt(totalQtyElement.innerHTML) - 1;
+                totalPriceElement.innerHTML = parseFloat(totalPriceElement.innerHTML) - unitPrice;
+            }
+        })
+    })
+</script>
+
+@if (SignInManager.IsSignedIn(User))
+{
+    <script src="https://www.paypal.com/sdk/js?client-id=AUaQszXaNQq1IeKbxRj0e_fG05HZ3WBiIc5mDYA4SlDA-X5JjYns4V1jdYEdO-mScJV2IMPFLni3WBoW"></script>
+    <script>
+        paypal.Buttons({
+            // Set up the transaction
+            createOrder: function (data, actions) {
+                return actions.order.create({
+                    purchase_units: [{
+                        amount: {
+                            value: parseFloat(document.getElementById('total-price').innerHTML),
+                            currency:
+                                document.getElementById('currency').innerHTML
+                        }
+                    }]
+                });
+            },
+
+            // Finalize the transaction
+            onApprove: function (data, actions) {
+                return actions.order.capture().then((res) => {
+                    return fetch("/Home/PaySuccess", {
+                        method: "POST",
+                        headers: new Headers({ 'content-type': 'application/json' }),
+                        body: JSON.stringify({
+                            'TransactionID': res.id,
+                            'CreateTime': res.create_time,
+                            'PayerName': res.payer.name.given_name +' '+ res.payer.name.surname,
+                            'PayerEmail': res.payer.email_address,
+                            'Amount': res.purchase_units[0].amount.value,
+                            'Currency': res.purchase_units[0].amount.currency_code,
+                            'PaymentMethod': 'paypal',
+                        })
+                    })
+                }).then( async (res)=>{
+                    const response = await res.json();
+                if (response.error) {
+                    console.alert(error);
+                } else {
+                    window.location.href = response.redirectUrl;
+                }
+
+                }).catch(err => console.error('Error: ',err));
+            },
+            onCancel: function (data) {
+                alert('Transaction was cancelled.');
+            },
+            onError: function (err) {
+                alert('An error occurred during the transaction.');
+            },
+            style: {
+                layout: 'horizontal', // 'vertical', 'horizontal'
+                color: 'silver',      // 'gold', 'blue', 'silver', 'black'
+                shape: 'rect',      // 'rect', 'pill'
+                label: 'checkout'     // 'checkout', 'pay', 'buynow', 'paypal'
+            }
+        }).render('#paypal-button-container');
+    </script>
+}

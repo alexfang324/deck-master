@@ -1,0 +1,26 @@
+﻿@model PayPalDemo.Models.Transaction
+@{
+    ViewData["Title"] = "Payment Confirmation";
+}
+
+<main b-6eg8tbgho9="" role="main" class="pb-3">
+
+
+    <br><br>
+    <div class="text-center" style="color:darkred;">
+        <span class="text-center">
+            <span style="font-size: 2em;">Congratulations @Model.PayerName</span><br><br><br><br>
+            <span style="font-size: 1.4em;">
+                <span>Your $</span><span>@Model.Amount</span>
+                <span>CAD</span>
+                <span>PayPal transaction was successful.</span>
+            </span>
+        </span><br><br>
+        <span class="text-center" style="font-size: 1.2em;">Keep this transaction Id for future reference.</span>
+
+        <span style="color: black; font-size: 1.2em;">PAYID-@Model.TransactionID</span>
+    </div>
+
+
+
+</main>

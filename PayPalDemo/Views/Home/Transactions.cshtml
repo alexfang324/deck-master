@@ -1,0 +1,62 @@
+﻿@model IEnumerable<PayPalDemo.Models.Transaction>
+
+@{
+    ViewData["Title"] = "Transactions";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="flex-row-space-between">
+    <h1>Transactions</h1>
+    <img src="/img/PayPal.png" style="width:200px;" />
+</div>
+
+<div class="table-responsive">
+<table class="table transaction-table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.TransactionID)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.CreateTime)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.PayerName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.PayerEmail)
+            </th>
+            <th>
+                Amount
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.PaymentMethod)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.TransactionID)
+            </td>
+            <td>
+                        @DateTime.Parse(item.CreateTime).ToString("dd/MM/yyyy, HH:mm")
+                    </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.PayerName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.PayerEmail)
+            </td>
+            <td>
+                $@item.Amount @item.Currency
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.PaymentMethod)
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
+</div>
